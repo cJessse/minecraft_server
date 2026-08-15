@@ -1,0 +1,14 @@
+[Unit]
+Description=Crafty Controller 4 Server Manager
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/workspaces/minecraft_server/minecraft/crafty/crafty-4
+ExecStart=/workspaces/minecraft_server/minecraft/crafty/.venv/bin/python3 main.py --daemon
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

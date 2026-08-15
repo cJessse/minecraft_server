@@ -1,0 +1,12 @@
+[Unit]
+Description=Playit.gg Minecraft Tunnel Daemon
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/playitd --socket-path /tmp/playit/playitd.sock
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
