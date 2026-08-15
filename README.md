@@ -10,16 +10,22 @@ Compatível com **GitHub Codespaces**, **VPS (Ubuntu/Debian)** e **WSL / Linux L
 
 ```text
 minecraft_server/
-├── setup.sh                  # Script de instalação e bootstrap automatizado
-├── manager.sh                # Menu central para iniciar, parar, monitorar e fazer backup
-├── config.env.example        # Modelo de variáveis de configuração do ambiente
+├── setup.sh                  # Atalho raiz para scripts/setup.sh
+├── manager.sh                # Atalho raiz para scripts/manager.sh
 ├── .gitignore                # Regras de exclusão para mundos pesados, logs e binários
-└── templates/
-    ├── server.properties.template  # Configurações padrão do servidor de Minecraft
-    ├── eula.txt                    # Aceite de EULA
-    └── systemd/                    # Modelos de serviços systemd para VPS
-        ├── crafty.service
-        └── playit.service
+├── config/
+│   ├── config.env.example    # Modelo de variáveis de configuração do ambiente
+│   └── templates/            # Templates padrão (server.properties, eula.txt)
+├── scripts/
+│   ├── setup.sh              # Script de instalação e bootstrap automatizado
+│   └── manager.sh            # Menu central para iniciar, parar e gerenciar
+├── deployments/
+│   └── systemd/              # Modelos de serviços systemd para VPS/Linux
+│       ├── crafty.service
+│       └── playit.service
+└── docs/
+    ├── ARCHITECTURE.md       # Visão geral da arquitetura e portas
+    └── BACKUP_GUIDE.md       # Guia passo a passo de backup com Google Drive
 ```
 
 ---
@@ -31,7 +37,7 @@ Clone o repositório no seu novo ambiente (Codespace ou Linux):
 ```bash
 git clone https://github.com/cJessse/minecraft_server.git
 cd minecraft_server
-chmod +x setup.sh manager.sh
+chmod +x setup.sh manager.sh scripts/*.sh
 ./setup.sh
 ```
 
@@ -39,7 +45,7 @@ O `setup.sh` realizará automaticamente:
 1. Instalação de dependências essenciais (`Java 21 OpenJDK`, `Python 3`, `pip`, `venv`, `rclone`).
 2. Instalação e configuração do **Playit.gg**.
 3. Download e configuração do **Crafty Controller 4** com ambiente virtual isolado.
-4. Criação do arquivo de configuração `config.env`.
+4. Criação do arquivo de configuração `config/config.env`.
 
 ---
 
@@ -55,27 +61,13 @@ Para abrir o menu interativo:
 - **1) Iniciar Servidor & Serviços:** Inicializa o túnel Playit e o painel Web do Crafty na porta `8443`.
 - **2) Parar todos os serviços:** Finaliza de forma limpa processos do Java, Crafty e Playit, liberando as portas.
 - **3) Fazer Backup e Sincronizar na Nuvem:** Compacta os dados do mundo e sincroniza com o Google Drive / nuvem via `rclone`.
-- **4) Parar Serviços + Backup:** Ideal antes de manutenções.
-- **5) Parar Serviços + Backup + Desligar Máquina:** Encerra serviços, envia backup para a nuvem e suspende o Codespace / máquina para economizar recursos.
+- **4) Parar Serviços + Backup Geral:** Ideal antes de manutenções.
+- **5) Parar Serviços + Backup + Desligar/Suspender Máquina:** Encerra serviços, envia backup para a nuvem e suspende o Codespace / máquina para economizar recursos.
 - **6) Ver Logs em tempo real:** Acompanhe os logs do Crafty, do Minecraft e do Playit.
 
 ---
 
-## ☁️ Configuração de Backup na Nuvem (Google Drive)
+## 📖 Mais Informações
 
-Para habilitar backups no Google Drive:
-
-1. No terminal do servidor, execute:
-   ```bash
-   rclone config
-   ```
-2. Crie um novo remote chamado **`drive`** escolhendo o tipo `drive` (Google Drive).
-3. Ajuste `RCLONE_REMOTE="drive:Minecraft_Backups"` no seu `config.env`.
-4. Os backups serão salvos localmente na pasta `backups/` e enviados para o Google Drive automaticamente.
-
----
-
-## 🔒 Segurança e Boas Práticas
-
-- O arquivo `config.env` contém suas preferências locais e não é versionado no Git.
-- Mundos e arquivos de logs são ignorados pelo `.gitignore` para manter o repositório leve.
+- Consulte [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) para detalhes técnicos da infraestrutura.
+- Consulte [docs/BACKUP_GUIDE.md](docs/BACKUP_GUIDE.md) para configurar o Google Drive com rclone.
