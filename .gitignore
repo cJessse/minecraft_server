@@ -3,7 +3,7 @@
 __pycache__/
 *.pyc
 
-# Binários e Servidor
+# Binários e Instâncias de Servidor
 *.jar
 minecraft/crafty/crafty-4/servers/*/world/
 minecraft/crafty/crafty-4/servers/*/logs/
@@ -18,5 +18,7 @@ nohup.out
 /tmp/playit/
 
 # Configurações com credenciais locais
+config/config.env
+!config/config.env.example
 config.env
 !config.env.example
