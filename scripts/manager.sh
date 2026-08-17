@@ -105,10 +105,8 @@ start_services() {
                 source .venv/bin/activate
                 cd crafty-4
                 nohup python3 main.py --daemon > "$CRAFTY_DIR/crafty_daemon.log" 2>&1 &
-                sleep 3
                 cd "$ROOT_DIR"
                 echo -e "${GREEN}OK${NC}"
-                echo -e "✓ Acesse o painel Crafty na porta ${CYAN}https://localhost:8443${NC}"
             else
                 echo -e "${RED}Ambiente do Crafty não encontrado. Execute ./scripts/setup.sh!${NC}"
             fi
@@ -116,6 +114,24 @@ start_services() {
             echo -e "${YELLOW}Já em execução${NC}"
         fi
     fi
+
+    # 3. Aguardar inicialização e verificar subida do Servidor Minecraft (Java / Portas)
+    echo -n "Aguardando inicialização do servidor Minecraft..."
+    for i in $(seq 1 15); do
+        if ps aux | grep -v grep | grep -q "java"; then
+            echo -e " ${GREEN}✓ Servidor Minecraft (Java) ATIVO!${NC}"
+            break
+        fi
+        sleep 1
+        echo -n "."
+    done
+
+    if ! ps aux | grep -v grep | grep -q "java"; then
+        echo -e " ${YELLOW}(Crafty iniciado; aguardando autostart do mundo no painel...)${NC}"
+    fi
+
+    echo -e "✓ Painel Crafty: ${CYAN}https://localhost:8443${NC}"
+    echo -e "✓ Porta Minecraft: ${CYAN}25565${NC}"
 }
 
 stop_services() {
@@ -234,7 +250,46 @@ view_logs() {
     esac
 }
 
-# Loop do Menu Principal
+# Suporte a argumentos de linha de comando não interativos (CI/CD, Cron, Actions)
+if [ -n "$1" ]; then
+    case "$1" in
+        1|start|iniciar)
+            start_services
+            status_services
+            exit 0
+            ;;
+        2|stop|parar)
+            stop_services
+            status_services
+            exit 0
+            ;;
+        3|backup)
+            backup_world
+            exit 0
+            ;;
+        4|stop-backup)
+            stop_services
+            backup_world
+            exit 0
+            ;;
+        5|shutdown)
+            stop_services
+            backup_world
+            shutdown_environment
+            exit 0
+            ;;
+        status)
+            status_services
+            exit 0
+            ;;
+        *)
+            echo "Uso: $0 [start|stop|backup|stop-backup|shutdown|status]"
+            exit 1
+            ;;
+    esac
+fi
+
+# Loop do Menu Principal Interativo
 while true; do
     status_services
     echo -e "O que deseja fazer?"
