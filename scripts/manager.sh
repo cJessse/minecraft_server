@@ -278,12 +278,18 @@ if [ -n "$1" ]; then
             shutdown_environment
             exit 0
             ;;
+        optimize|otimizar)
+            if [ -f "$SCRIPT_DIR/optimize_server.sh" ]; then
+                bash "$SCRIPT_DIR/optimize_server.sh"
+            fi
+            exit 0
+            ;;
         status)
             status_services
             exit 0
             ;;
         *)
-            echo "Uso: $0 [start|stop|backup|stop-backup|shutdown|status]"
+            echo "Uso: $0 [start|stop|backup|stop-backup|shutdown|optimize|status]"
             exit 1
             ;;
     esac
@@ -299,9 +305,10 @@ while true; do
     echo "4) Parar Serviços + Backup Geral"
     echo "5) Parar Serviços + Backup + Desligar/Suspender Máquina"
     echo "6) Ver Logs em tempo real"
+    echo "7) Aplicar Otimizações Anti-Lag (server.properties)"
     echo "0) Sair"
     echo "------------------------------------------------------"
-    read -rp "Digite a opção [0-6]: " option
+    read -rp "Digite a opção [0-7]: " option
 
     case $option in
         1) start_services ;;
@@ -317,6 +324,11 @@ while true; do
             shutdown_environment
             ;;
         6) view_logs ;;
+        7)
+            if [ -f "$SCRIPT_DIR/optimize_server.sh" ]; then
+                bash "$SCRIPT_DIR/optimize_server.sh"
+            fi
+            ;;
         0) echo "Até logo!"; exit 0 ;;
         *) echo -e "${RED}Opção inválida!${NC}" ;;
     esac
