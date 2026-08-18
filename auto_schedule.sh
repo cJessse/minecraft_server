@@ -22,8 +22,18 @@ case "$ACTION" in
         gh codespace stop -c "$CODESPACE_NAME" >> "$LOG_FILE" 2>&1
         log ">>> [CRON] Codespace finalizado com sucesso."
         ;;
+    heartbeat|keepalive|ping)
+        STATE=$(gh codespace view -c "$CODESPACE_NAME" --json state --jq .state 2>/dev/null || echo "Unknown")
+        if [ "$STATE" = "Available" ]; then
+            log ">>> [HEARTBEAT] Renovando atividade no Codespace..."
+            gh codespace ssh -c "$CODESPACE_NAME" -- "echo keepalive > /dev/null" >> "$LOG_FILE" 2>&1
+            log ">>> [HEARTBEAT] Atividade renovada com sucesso (Idle timer resetado)."
+        else
+            log ">>> [HEARTBEAT] Codespace em estado '$STATE', nenhum keepalive necessário."
+        fi
+        ;;
     *)
-        echo "Uso: $0 {start|stop}"
+        echo "Uso: $0 {start|stop|heartbeat}"
         exit 1
         ;;
 esac
