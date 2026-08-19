@@ -13,7 +13,7 @@ chunks:
     ender_pearl: 8
     snowball: 16
   fixed-chunk-inhabited-time: -1
-  flush-regions-on-save: false
+  flush-regions-on-save: true
   max-auto-save-chunks-per-tick: 12
   prevent-moving-into-unloaded-chunks: true
 

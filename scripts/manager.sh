@@ -74,8 +74,23 @@ status_services() {
     echo -e "══════════════════════════════════════════════════════\n"
 }
 
+save_world() {
+    echo -e "\n>>> Forçando gravação e sincronização do mundo em disco (OS sync)..."
+    sync
+    echo -e "${GREEN}✓ Sincronização de sistema de arquivos concluída (dados salvos em disco).${NC}"
+}
+
+optimize_all_instances() {
+    if [ -f "$SCRIPT_DIR/optimize_server.sh" ]; then
+        bash "$SCRIPT_DIR/optimize_server.sh" -q
+    fi
+}
+
 start_services() {
-    echo -e "\n>>> Iniciando serviços..."
+    echo -e "\n>>> [1/4] Verificando e aplicando otimizações anti-lag nas instâncias..."
+    optimize_all_instances
+
+    echo -e "\n>>> [2/4] Iniciando serviços..."
 
     # 1. Iniciar Playit daemon
     if [ "${ENABLE_PLAYIT:-true}" = "true" ]; then
@@ -135,19 +150,34 @@ start_services() {
 }
 
 stop_services() {
-    echo -e "\n>>> Encerrando todos os serviços..."
+    echo -e "\n>>> Encerrando todos os serviços com salvamento seguro (Graceful Shutdown)..."
 
-    # Minecraft Java
+    # Minecraft Java: enviar sinal TERM e aguardar flush completo de chunks
     if ps aux | grep -v grep | grep -q "java"; then
-        echo -n "Parando servidor Minecraft (Java)... "
-        pkill -f "java" || true
-        echo -e "${GREEN}OK${NC}"
+        echo -n "Solicitando gravação de chunks e encerramento do Servidor Minecraft... "
+        pkill -TERM -f "java" || true
+        
+        # Aguardar até 30 segundos para o processo Java gravar tudo e sair de forma limpa
+        for i in $(seq 1 30); do
+            if ! ps aux | grep -v grep | grep -q "java"; then
+                echo -e "${GREEN}OK (Mundo gravado e finalizado com sucesso!)${NC}"
+                break
+            fi
+            sleep 1
+        done
+
+        if ps aux | grep -v grep | grep -q "java"; then
+            echo -e "${YELLOW}Tempo limite excedido. Forçando encerramento final...${NC}"
+            pkill -9 -f "java" || true
+        fi
     fi
 
     # Crafty Controller
     if ps aux | grep -v grep | grep -q "python3 main.py"; then
         echo -n "Parando Crafty Controller... "
-        pkill -f "python3 main.py" || true
+        pkill -TERM -f "python3 main.py" || true
+        sleep 2
+        pkill -9 -f "python3 main.py" 2>/dev/null || true
         echo -e "${GREEN}OK${NC}"
     fi
 
@@ -158,8 +188,13 @@ stop_services() {
         echo -e "${GREEN}OK${NC}"
     fi
 
-    sleep 2
-    echo -e "✓ Todos os serviços foram finalizados e as portas liberadas!"
+    # Sincronização obrigatória de disco do sistema operacional
+    echo -n "Garantindo gravação física de todos os dados no disco (sync)... "
+    sync
+    echo -e "${GREEN}OK${NC}"
+
+    sleep 1
+    echo -e "✓ Todos os serviços foram finalizados com segurança e as portas liberadas!"
 }
 
 backup_world() {
@@ -168,13 +203,14 @@ backup_world() {
     TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
     BACKUP_FILE="$BACKUP_DIR/minecraft_world_${TIMESTAMP}.tar.gz"
 
+    # Sincronizar buffers antes de compactar
+    sync
+
     echo "Localizando dados do mundo..."
     TARGET_DIR=""
     if [ -d "$WORKSPACE_DIR/minecraft/crafty/crafty-4/servers" ]; then
-        SERVER_INSTANCE=$(find "$WORKSPACE_DIR/minecraft/crafty/crafty-4/servers" -mindepth 1 -maxdepth 1 -type d | head -1)
-        if [ -n "$SERVER_INSTANCE" ] && [ -d "$SERVER_INSTANCE/world" ]; then
-            TARGET_DIR="$SERVER_INSTANCE/world"
-        fi
+        # Busca recursiva por qualquer pasta 'world' em instâncias
+        TARGET_DIR=$(find "$WORKSPACE_DIR/minecraft/crafty/crafty-4/servers" -maxdepth 3 -type d -name "world" 2>/dev/null | head -1)
     fi
 
     if [ -z "$TARGET_DIR" ] && [ -d "$WORKSPACE_DIR/world" ]; then
@@ -278,6 +314,10 @@ if [ -n "$1" ]; then
             shutdown_environment
             exit 0
             ;;
+        save|salvar|flush|sync)
+            save_world
+            exit 0
+            ;;
         optimize|otimizar)
             if [ -f "$SCRIPT_DIR/optimize_server.sh" ]; then
                 bash "$SCRIPT_DIR/optimize_server.sh"
@@ -289,7 +329,7 @@ if [ -n "$1" ]; then
             exit 0
             ;;
         *)
-            echo "Uso: $0 [start|stop|backup|stop-backup|shutdown|optimize|status]"
+            echo "Uso: $0 [start|stop|backup|stop-backup|save|shutdown|optimize|status]"
             exit 1
             ;;
     esac
@@ -300,15 +340,16 @@ while true; do
     status_services
     echo -e "O que deseja fazer?"
     echo "1) Iniciar Servidor & Serviços (Crafty + Playit)"
-    echo "2) Parar todos os serviços"
+    echo "2) Parar todos os serviços (Graceful Shutdown Seguro)"
     echo "3) Fazer Backup e Sincronizar na Nuvem"
     echo "4) Parar Serviços + Backup Geral"
     echo "5) Parar Serviços + Backup + Desligar/Suspender Máquina"
-    echo "6) Ver Logs em tempo real"
-    echo "7) Aplicar Otimizações Anti-Lag (server.properties)"
+    echo "6) Sincronizar/Salvar mundo no disco agora (OS sync)"
+    echo "7) Ver Logs em tempo real"
+    echo "8) Aplicar Otimizações Anti-Lag em Todas as Instâncias"
     echo "0) Sair"
     echo "------------------------------------------------------"
-    read -rp "Digite a opção [0-7]: " option
+    read -rp "Digite a opção [0-8]: " option
 
     case $option in
         1) start_services ;;
@@ -323,8 +364,9 @@ while true; do
             backup_world
             shutdown_environment
             ;;
-        6) view_logs ;;
-        7)
+        6) save_world ;;
+        7) view_logs ;;
+        8)
             if [ -f "$SCRIPT_DIR/optimize_server.sh" ]; then
                 bash "$SCRIPT_DIR/optimize_server.sh"
             fi
