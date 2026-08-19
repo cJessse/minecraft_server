@@ -76,4 +76,5 @@ Para abrir o menu interativo:
 ## 📖 Mais Informações
 
 - Consulte [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) para detalhes técnicos da infraestrutura.
+- Consulte [docs/PERFORMANCE_GUIDE.md](docs/PERFORMANCE_GUIDE.md) para o guia de otimização, flags de JVM e pré-geração de chunks.
 - Consulte [docs/BACKUP_GUIDE.md](docs/BACKUP_GUIDE.md) para configurar o Google Drive com rclone.

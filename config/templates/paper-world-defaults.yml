@@ -1,0 +1,75 @@
+# ==============================================================================
+# PAPER WORLD DEFAULTS TEMPLATE (Optimized for Codespaces / 5-10 Players)
+# Preserva farms e mecânicas vanilla reduzindo cálculos redundantes
+# ==============================================================================
+_version: 30
+
+chunks:
+  auto-save-interval: 6000 # Salva chunks a cada 5 minutos em vez de salvar a todo instante
+  delay-chunk-unloads-by: 10s
+  entity-per-chunk-save-limit:
+    arrow: 16
+    experience_orb: 16
+    ender_pearl: 8
+    snowball: 16
+  fixed-chunk-inhabited-time: -1
+  flush-regions-on-save: false
+  max-auto-save-chunks-per-tick: 12
+  prevent-moving-into-unloaded-chunks: true
+
+entities:
+  armor-stands:
+    do-collision-entity-lookups: false
+    tick: false
+  behavior:
+    disable-chest-cat-detection: true
+    spawner-nerfed-mobs-should-jump: false
+  spawning:
+    despawn-ranges:
+      ambient:
+        hard: 72
+        soft: 28
+      axolotls:
+        hard: 72
+        soft: 28
+      creature:
+        hard: 72
+        soft: 28
+      misc:
+        hard: 72
+        soft: 28
+      monster:
+        hard: 96
+        soft: 32
+      underground_water_creature:
+        hard: 72
+        soft: 28
+      water_ambient:
+        hard: 56
+        soft: 28
+      water_creature:
+        hard: 72
+        soft: 28
+    non-tick-mobs-despawn-speed: 20
+
+collisions:
+  allow-player-cramming-damage: true
+  fix-climbing-bypassing-cramming-rule: true
+  max-entity-collisions: 4 # Previne lag em mob grinders/criações aglomeradas
+
+environment:
+  optimize-explosions: true
+  treasure-maps:
+    enabled: true
+    find-already-discovered:
+      loot-tables: true
+      villager-trade: true
+
+tick-rates:
+  sensor:
+    villager:
+      secondarypoisensor: 40
+  behavior:
+    villager:
+      validatenearbypoi: 40
+      acquirepoi: 120

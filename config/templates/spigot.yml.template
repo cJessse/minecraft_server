@@ -1,0 +1,41 @@
+# ==============================================================================
+# SPIGOT CONFIG TEMPLATE (Optimized for Codespaces / 5-10 Players)
+# ==============================================================================
+settings:
+  save-user-cache-on-stop-only: true
+  bungeecord: false
+  sample-count: 12
+  user-cache-size: 1000
+  player-shuffle: 0
+
+world-settings:
+  default:
+    view-distance: 7
+    simulation-distance: 5
+    item-despawn-rate: 6000
+    arrow-despawn-rate: 300
+    trident-despawn-rate: 1200
+    merge-radius:
+      item: 4.0
+      exp: 6.0
+    mob-spawn-range: 4
+    entity-activation-range:
+      animals: 16
+      monsters: 24
+      raiders: 32
+      misc: 8
+      water: 12
+      villagers: 16
+      flying-monsters: 32
+      tick-inactive-villagers: false
+    entity-tracking-range:
+      players: 48
+      animals: 32
+      monsters: 40
+      misc: 24
+      other: 48
+    ticks-per:
+      hopper-transfer: 8
+      hopper-check: 8
+    hopper-amount: 1
+    max-tnt-per-tick: 50
