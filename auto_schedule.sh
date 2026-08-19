@@ -2,12 +2,25 @@
 # ==============================================================================
 # MINECRAFT CODESPACE CRON CONTROLLER (Local / Server)
 # ==============================================================================
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$SCRIPT_DIR"
+
+if [ -f "$ROOT_DIR/config/config.env" ]; then
+    # shellcheck disable=SC1091
+    source "$ROOT_DIR/config/config.env"
+fi
+
 ACTION="${1:-auto}"
-CODESPACE_NAME="urban-winner-wrgrpvg5v9j9c9r7j"
-LOG_FILE="$HOME/projetos/minecraft_server/cron_schedule.log"
+# Permite definir no config.env ou autodetecta pelo repositório atual via gh CLI
+CODESPACE_NAME="${CODESPACE_NAME:-$(gh codespace list --json name,repository --jq '.[] | select(.repository | endswith("/minecraft_server")) | .name' 2>/dev/null | head -n1)}"
+LOG_FILE="${LOG_FILE:-$ROOT_DIR/cron_schedule.log}"
+
+if [ -z "$CODESPACE_NAME" ]; then
+    CODESPACE_NAME="$(gh codespace list --json name --jq '.[0].name' 2>/dev/null || true)"
+fi
 
 log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
 }
 
 case "$ACTION" in

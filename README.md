@@ -18,7 +18,12 @@ minecraft_server/
 │   └── templates/            # Templates padrão (server.properties, eula.txt)
 ├── scripts/
 │   ├── setup.sh              # Script de instalação e bootstrap automatizado
-│   └── manager.sh            # Menu central para iniciar, parar e gerenciar
+│   ├── manager.sh            # Menu central para iniciar, parar e gerenciar
+│   └── optimize_server.sh    # Script de otimização anti-lag e TPS para instâncias
+├── auto_schedule.sh          # Controlador e keepalive/heartbeat para Codespaces
+├── .github/
+│   └── workflows/
+│       └── scheduler.yml     # Fluxo de agendamento automático via GitHub Actions
 ├── deployments/
 │   └── systemd/              # Modelos de serviços systemd para VPS/Linux
 │       ├── crafty.service
@@ -64,6 +69,7 @@ Para abrir o menu interativo:
 - **4) Parar Serviços + Backup Geral:** Ideal antes de manutenções.
 - **5) Parar Serviços + Backup + Desligar/Suspender Máquina:** Encerra serviços, envia backup para a nuvem e suspende o Codespace / máquina para economizar recursos.
 - **6) Ver Logs em tempo real:** Acompanhe os logs do Crafty, do Minecraft e do Playit.
+- **7) Aplicar Otimizações Anti-Lag:** Aplica parâmetros de alta performance no `server.properties` (view-distance, simulation-distance, async sync, etc.).
 
 ---
 

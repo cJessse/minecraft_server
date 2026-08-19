@@ -30,14 +30,27 @@ jobs:
 
       - name: Execute Schedule Action
         env:
-          GH_TOKEN: ${{ secrets.GH_CODESPACE_TOKEN }}
-          CODESPACE_NAME: "urban-winner-wrgrpvg5v9j9c9r7j"
+          GH_TOKEN: ${{ secrets.GH_CODESPACE_TOKEN || secrets.GITHUB_TOKEN }}
+          SPECIFIED_CODESPACE: ${{ vars.CODESPACE_NAME || secrets.CODESPACE_NAME }}
           ACTION_INPUT: ${{ github.event.inputs.action || 'auto' }}
         run: |
           CURRENT_HOUR_UTC=$(date -u +%H)
           CURRENT_MIN_UTC=$(date -u +%M)
           echo "Current UTC Time: ${CURRENT_HOUR_UTC}:${CURRENT_MIN_UTC}"
           echo "Requested Action: ${ACTION_INPUT}"
+
+          CODESPACE_NAME="$SPECIFIED_CODESPACE"
+          if [ -z "$CODESPACE_NAME" ]; then
+            REPO_NAME="${{ github.repository }}"
+            CODESPACE_NAME=$(gh codespace list --json name,repository --jq --arg r "$REPO_NAME" '.[] | select(.repository == $r) | .name' | head -n1)
+          fi
+
+          if [ -z "$CODESPACE_NAME" ]; then
+            echo "Nenhum Codespace encontrado para o repositório ${{ github.repository }}."
+            exit 1
+          fi
+
+          echo "Codespace alvo: $CODESPACE_NAME"
 
           DECIDED_ACTION="$ACTION_INPUT"
 
