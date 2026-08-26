@@ -48,7 +48,7 @@ jobs:
           CODESPACE_NAME="$SPECIFIED_CODESPACE"
           if [ -z "$CODESPACE_NAME" ]; then
             REPO_NAME="${{ github.repository }}"
-            CODESPACE_NAME=$(gh codespace list --json name,repository --jq --arg r "$REPO_NAME" '.[] | select(.repository == $r) | .name' | head -n1)
+            CODESPACE_NAME=$(gh codespace list --json name,repository --jq ".[] | select(.repository == \"$REPO_NAME\") | .name" | head -n1)
           fi
 
           if [ -z "$CODESPACE_NAME" ]; then
@@ -114,7 +114,7 @@ jobs:
           CODESPACE_NAME="$SPECIFIED_CODESPACE"
           if [ -z "$CODESPACE_NAME" ]; then
             REPO_NAME="${{ github.repository }}"
-            CODESPACE_NAME=$(gh codespace list --json name,repository --jq --arg r "$REPO_NAME" '.[] | select(.repository == $r) | .name' | head -n1)
+            CODESPACE_NAME=$(gh codespace list --json name,repository --jq ".[] | select(.repository == \"$REPO_NAME\") | .name" | head -n1)
           fi
 
           if [ -n "$CODESPACE_NAME" ]; then
