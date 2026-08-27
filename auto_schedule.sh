@@ -44,10 +44,12 @@ case "$ACTION" in
         STATE=$(gh codespace view -c "$CODESPACE_NAME" --json state --jq .state 2>/dev/null || echo "Unknown")
         if [ "$STATE" = "Available" ]; then
             log ">>> [HEARTBEAT] Renovando atividade e forçando sync de chunks no Codespace..."
-            gh codespace ssh -c "$CODESPACE_NAME" -- "sync && echo keepalive > /dev/null" >> "$LOG_FILE" 2>&1
+            gh codespace ssh -c "$CODESPACE_NAME" -- "sync && cd /workspaces/minecraft_server && ./manager.sh status" >> "$LOG_FILE" 2>&1
             log ">>> [HEARTBEAT] Atividade renovada com sucesso (Idle timer resetado e disco sincronizado)."
         else
-            log ">>> [HEARTBEAT] Codespace em estado '$STATE', nenhum keepalive necessário."
+            log ">>> [HEARTBEAT] Codespace em estado '$STATE' durante a janela ativa! Reativando serviços..."
+            gh codespace ssh -c "$CODESPACE_NAME" -- "cd /workspaces/minecraft_server && ./manager.sh start" >> "$LOG_FILE" 2>&1
+            log ">>> [HEARTBEAT] Servidor e Codespace reativados com sucesso."
         fi
         ;;
     session|loop)

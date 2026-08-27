@@ -1,0 +1,8 @@
+{
+  "name": "Minecraft Server",
+  "customizations": {
+    "codespaces": {
+      "idleTimeoutMinutes": 120
+    }
+  }
+}
