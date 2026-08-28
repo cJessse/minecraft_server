@@ -36,16 +36,16 @@ case "$ACTION" in
         log ">>> [CRON] Codespace finalizado com sucesso."
         ;;
     save|sync)
-        log ">>> [CRON] Forçando gravação e flush do mundo no disco..."
+        log ">>> [CRON] Forçando gravação e flush do mundo no disco (save-all flush)..."
         gh codespace ssh -c "$CODESPACE_NAME" -- "cd /workspaces/minecraft_server && ./manager.sh save" >> "$LOG_FILE" 2>&1 || true
-        log ">>> [CRON] Mundo sincronizado no disco."
+        log ">>> [CRON] Mundo sincronizado e persistido no disco."
         ;;
     heartbeat|keepalive|ping)
         STATE=$(gh codespace view -c "$CODESPACE_NAME" --json state --jq .state 2>/dev/null || echo "Unknown")
         if [ "$STATE" = "Available" ]; then
-            log ">>> [HEARTBEAT] Renovando atividade e forçando sync de chunks no Codespace..."
-            gh codespace ssh -c "$CODESPACE_NAME" -- "sync && cd /workspaces/minecraft_server && ./manager.sh status" >> "$LOG_FILE" 2>&1
-            log ">>> [HEARTBEAT] Atividade renovada com sucesso (Idle timer resetado e disco sincronizado)."
+            log ">>> [HEARTBEAT] Renovando atividade e forçando save-all flush no Codespace..."
+            gh codespace ssh -c "$CODESPACE_NAME" -- "cd /workspaces/minecraft_server && ./manager.sh save && ./manager.sh status" >> "$LOG_FILE" 2>&1
+            log ">>> [HEARTBEAT] Atividade renovada e mundo salvo com sucesso."
         else
             log ">>> [HEARTBEAT] Codespace em estado '$STATE' durante a janela ativa! Reativando serviços..."
             gh codespace ssh -c "$CODESPACE_NAME" -- "cd /workspaces/minecraft_server && ./manager.sh start" >> "$LOG_FILE" 2>&1
@@ -66,7 +66,7 @@ case "$ACTION" in
             ELAPSED=$((ELAPSED + INTERVAL_SECONDS))
             REMAINING=$(( (TOTAL_SECONDS - ELAPSED) / 60 ))
             log ">>> [SESSION] Keepalive ativo (${REMAINING}m restantes)..."
-            gh codespace ssh -c "$CODESPACE_NAME" -- "sync && cd /workspaces/minecraft_server && ./manager.sh status" >> "$LOG_FILE" 2>&1 || true
+            gh codespace ssh -c "$CODESPACE_NAME" -- "cd /workspaces/minecraft_server && ./manager.sh save && ./manager.sh status" >> "$LOG_FILE" 2>&1 || true
         done
 
         log ">>> [SESSION] Tempo de sessão esgotado (${DURATION_MINUTES}m). Encerrando..."

@@ -1,5 +1,4 @@
-# Minecraft Server Properties Template (Optimized for Low Latency & High TPS)
-# Configurações ajustadas para desempenho ótimo em VPS / Codespaces
+# Minecraft Server Properties Template (Optimized for Low Latency & High TPS & Safe Persistence)
 accepts-transfers=false
 allow-flight=false
 allow-nether=true
@@ -9,7 +8,7 @@ difficulty=easy
 enable-command-block=true
 enable-jmx-monitoring=false
 enable-query=false
-enable-rcon=false
+enable-rcon=true
 enable-status=true
 enforce-secure-profile=true
 enforce-whitelist=false
@@ -35,6 +34,7 @@ prevent-proxy-connections=false
 pvp=true
 query.port=25565
 rate-limit=0
+rcon.password=SGItosSaveSecretPass2026!
 rcon.port=25575
 server-ip=
 server-port=25565
@@ -43,7 +43,7 @@ spawn-animals=true
 spawn-monsters=true
 spawn-npcs=true
 spawn-protection=16
-sync-chunk-writes=false
+sync-chunk-writes=true
 text-filtering-config=
 use-native-transport=true
 view-distance=7

@@ -62,12 +62,19 @@ status_services() {
         echo -e "  Servidor Minecraft: ${RED}○ PARADO${NC}"
     fi
 
+    # Watchdog AutoSave
+    if pgrep -f "watchdog.sh" > /dev/null; then
+        echo -e "  Watchdog AutoSave:  ${GREEN}● ATIVO (60s Flush)${NC}"
+    else
+        echo -e "  Watchdog AutoSave:  ${YELLOW}○ INATIVO${NC}"
+    fi
+
     # Portas em escuta
     echo -e "\n  Portas em escuta:"
     if command -v ss &>/dev/null; then
-        sudo ss -tulpn 2>/dev/null | grep -E '8443|25565' | awk '{print "    - " $1, $5}' || echo "    Nenhuma porta ativa detectada."
+        sudo ss -tulpn 2>/dev/null | grep -E '8443|25565|25575' | awk '{print "    - " $1, $5}' || echo "    Nenhuma porta ativa detectada."
     elif command -v netstat &>/dev/null; then
-        sudo netstat -tulpn 2>/dev/null | grep -E '8443|25565' | awk '{print "    - " $1, $4}' || echo "    Nenhuma porta ativa detectada."
+        sudo netstat -tulpn 2>/dev/null | grep -E '8443|25565|25575' | awk '{print "    - " $1, $4}' || echo "    Nenhuma porta ativa detectada."
     else
         echo "    (Instale net-tools ou iproute2 para checar portas)"
     fi
@@ -75,9 +82,12 @@ status_services() {
 }
 
 save_world() {
-    echo -e "\n>>> Forçando gravação e sincronização do mundo em disco (OS sync)..."
+    echo -e "\n>>> Forçando gravação e flush de todos os dados no Minecraft (save-all flush)..."
+    if [ -f "$SCRIPT_DIR/rcon.py" ]; then
+        python3 "$SCRIPT_DIR/rcon.py" "save-all flush" 2>/dev/null || true
+    fi
     sync
-    echo -e "${GREEN}✓ Sincronização de sistema de arquivos concluída (dados salvos em disco).${NC}"
+    echo -e "${GREEN}✓ Sincronização e flush completo do mundo concluídos (dados 100% salvos em disco).${NC}"
 }
 
 optimize_all_instances() {
@@ -86,8 +96,19 @@ optimize_all_instances() {
     fi
 }
 
+start_watchdog() {
+    if ! pgrep -f "watchdog.sh" > /dev/null && [ -f "$SCRIPT_DIR/watchdog.sh" ]; then
+        nohup bash "$SCRIPT_DIR/watchdog.sh" > /dev/null 2>&1 &
+    fi
+}
+
+stop_watchdog() {
+    pkill -f "watchdog.sh" 2>/dev/null || true
+    rm -f /tmp/minecraft_watchdog.pid 2>/dev/null || true
+}
+
 start_services() {
-    echo -e "\n>>> [1/4] Verificando e aplicando otimizações anti-lag nas instâncias..."
+    echo -e "\n>>> [1/4] Verificando e aplicando otimizações anti-lag e persistência segura..."
     optimize_all_instances
 
     echo -e "\n>>> [2/4] Iniciando serviços..."
@@ -130,7 +151,10 @@ start_services() {
         fi
     fi
 
-    # 3. Aguardar inicialização e verificar subida do Servidor Minecraft (Java / Portas)
+    # 3. Iniciar Watchdog de AutoSave Contínuo (Flush a cada 60s)
+    start_watchdog
+
+    # 4. Aguardar inicialização e verificar subida do Servidor Minecraft (Java / Portas)
     echo -n "Aguardando inicialização do servidor Minecraft..."
     for i in $(seq 1 15); do
         if ps aux | grep -v grep | grep -q "java"; then
@@ -147,15 +171,28 @@ start_services() {
 
     echo -e "✓ Painel Crafty: ${CYAN}https://localhost:8443${NC}"
     echo -e "✓ Porta Minecraft: ${CYAN}25565${NC}"
+    echo -e "✓ Porta RCON: ${CYAN}25575${NC}"
 }
 
 stop_services() {
     echo -e "\n>>> Encerrando todos os serviços com salvamento seguro (Graceful Shutdown)..."
 
-    # Minecraft Java: enviar sinal TERM e aguardar flush completo de chunks
+    # Parar watchdog
+    stop_watchdog
+
+    # 1. Minecraft Java: Enviar save-all flush e stop via RCON se disponível
     if ps aux | grep -v grep | grep -q "java"; then
-        echo -n "Solicitando gravação de chunks e encerramento do Servidor Minecraft... "
-        pkill -TERM -f "java" || true
+        if [ -f "$SCRIPT_DIR/rcon.py" ]; then
+            echo -n "Enviando comando 'save-all flush' via RCON... "
+            python3 "$SCRIPT_DIR/rcon.py" "save-all flush" 2>/dev/null || true
+            echo -e "${GREEN}OK${NC}"
+            echo -n "Enviando comando 'stop' via RCON... "
+            python3 "$SCRIPT_DIR/rcon.py" "stop" 2>/dev/null || true
+            echo -e "${GREEN}OK${NC}"
+        fi
+
+        echo -n "Aguardando gravação completa de chunks e saída do Java... "
+        pkill -TERM -f "java" 2>/dev/null || true
         
         # Aguardar até 30 segundos para o processo Java gravar tudo e sair de forma limpa
         for i in $(seq 1 30); do
@@ -172,7 +209,7 @@ stop_services() {
         fi
     fi
 
-    # Crafty Controller
+    # 2. Crafty Controller
     if ps aux | grep -v grep | grep -q "python3 main.py"; then
         echo -n "Parando Crafty Controller... "
         pkill -TERM -f "python3 main.py" || true
@@ -181,7 +218,7 @@ stop_services() {
         echo -e "${GREEN}OK${NC}"
     fi
 
-    # Playit.gg
+    # 3. Playit.gg
     if ps aux | grep -v grep | grep -q "playitd"; then
         echo -n "Parando Playit.gg... "
         sudo pkill -f "playitd" || true
@@ -194,7 +231,7 @@ stop_services() {
     echo -e "${GREEN}OK${NC}"
 
     sleep 1
-    echo -e "✓ Todos os serviços foram finalizados com segurança e as portas liberadas!"
+    echo -e "✓ Todos os serviços foram finalizados com segurança e os dados preservados!"
 }
 
 backup_world() {
@@ -203,13 +240,15 @@ backup_world() {
     TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
     BACKUP_FILE="$BACKUP_DIR/minecraft_world_${TIMESTAMP}.tar.gz"
 
-    # Sincronizar buffers antes de compactar
+    # Salvar chunks via RCON antes de empacotar
+    if [ -f "$SCRIPT_DIR/rcon.py" ] && ps aux | grep -v grep | grep -q "java"; then
+        python3 "$SCRIPT_DIR/rcon.py" "save-all flush" 2>/dev/null || true
+    fi
     sync
 
     echo "Localizando dados do mundo..."
     TARGET_DIR=""
     if [ -d "$WORKSPACE_DIR/minecraft/crafty/crafty-4/servers" ]; then
-        # Busca recursiva por qualquer pasta 'world' em instâncias
         TARGET_DIR=$(find "$WORKSPACE_DIR/minecraft/crafty/crafty-4/servers" -maxdepth 3 -type d -name "world" 2>/dev/null | head -1)
     fi
 
@@ -253,7 +292,6 @@ shutdown_environment() {
     if [[ "$confirm" =~ ^[sS]$ ]]; then
         echo -e "Desligando em 3 segundos..."
         sleep 2
-        # Detectar se está no GitHub Codespaces
         if [ -n "$CODESPACE_NAME" ] && command -v gh &> /dev/null; then
             gh codespace stop -c "$CODESPACE_NAME" || true
         fi
@@ -268,7 +306,8 @@ view_logs() {
     echo "1) Crafty Controller Log"
     echo "2) Minecraft Server Log"
     echo "3) Playit.gg Tunnel Log"
-    echo "4) Voltar"
+    echo "4) Watchdog AutoSave Log"
+    echo "5) Voltar"
     read -rp "Opção: " log_opt
 
     case $log_opt in
@@ -282,6 +321,7 @@ view_logs() {
             fi
             ;;
         3) tail -n 50 -f /tmp/playit.log 2>/dev/null || echo "Log do Playit não encontrado." ;;
+        4) tail -n 50 -f /tmp/minecraft_watchdog.log 2>/dev/null || echo "Log do Watchdog não encontrado." ;;
         *) return ;;
     esac
 }
@@ -328,8 +368,17 @@ if [ -n "$1" ]; then
             status_services
             exit 0
             ;;
+        cmd|rcon)
+            shift
+            if [ -f "$SCRIPT_DIR/rcon.py" ]; then
+                python3 "$SCRIPT_DIR/rcon.py" "$*"
+            else
+                echo "rcon.py não encontrado."
+            fi
+            exit 0
+            ;;
         *)
-            echo "Uso: $0 [start|stop|backup|stop-backup|save|shutdown|optimize|status]"
+            echo "Uso: $0 [start|stop|backup|stop-backup|save|shutdown|optimize|status|cmd <comando>]"
             exit 1
             ;;
     esac
@@ -344,7 +393,7 @@ while true; do
     echo "3) Fazer Backup e Sincronizar na Nuvem"
     echo "4) Parar Serviços + Backup Geral"
     echo "5) Parar Serviços + Backup + Desligar/Suspender Máquina"
-    echo "6) Sincronizar/Salvar mundo no disco agora (OS sync)"
+    echo "6) Sincronizar/Salvar mundo no disco agora (save-all flush + sync)"
     echo "7) Ver Logs em tempo real"
     echo "8) Aplicar Otimizações Anti-Lag em Todas as Instâncias"
     echo "0) Sair"

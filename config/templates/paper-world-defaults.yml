@@ -1,11 +1,11 @@
 # ==============================================================================
-# PAPER WORLD DEFAULTS TEMPLATE (Optimized for Codespaces / 5-10 Players)
-# Preserva farms e mecânicas vanilla reduzindo cálculos redundantes
+# PAPER WORLD DEFAULTS TEMPLATE (Ultra-Safe Autosave & Anti-Lag)
+# Preserva integridade de blocos, entidades, animais domados e chunks
 # ==============================================================================
 _version: 30
 
 chunks:
-  auto-save-interval: 6000 # Salva chunks a cada 5 minutos em vez de salvar a todo instante
+  auto-save-interval: 400 # Salva chunks a cada 20 segundos para evitar qualquer rollback
   delay-chunk-unloads-by: 10s
   entity-per-chunk-save-limit:
     arrow: 16
@@ -13,8 +13,8 @@ chunks:
     ender_pearl: 8
     snowball: 16
   fixed-chunk-inhabited-time: -1
-  flush-regions-on-save: true
-  max-auto-save-chunks-per-tick: 12
+  flush-regions-on-save: true # Gravação forçada em disco imediatamente
+  max-auto-save-chunks-per-tick: 24
   prevent-moving-into-unloaded-chunks: true
 
 entities:
@@ -55,7 +55,7 @@ entities:
 collisions:
   allow-player-cramming-damage: true
   fix-climbing-bypassing-cramming-rule: true
-  max-entity-collisions: 4 # Previne lag em mob grinders/criações aglomeradas
+  max-entity-collisions: 4
 
 environment:
   optimize-explosions: true
