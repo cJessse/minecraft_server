@@ -57,19 +57,28 @@ case "$ACTION" in
         INTERVAL_SECONDS=300
         TOTAL_SECONDS=$((DURATION_MINUTES * 60))
         ELAPSED=0
+        SHUTDOWN_TARGET="${AUTO_SHUTDOWN_TIME:-13:45}"
+        SHUTDOWN_TZ="${AUTO_SHUTDOWN_TZ:-America/Sao_Paulo}"
 
-        log ">>> [SESSION] Iniciando sessão supervisionada de ${DURATION_MINUTES} minutos..."
+        log ">>> [SESSION] Iniciando sessão supervisionada de ${DURATION_MINUTES} minutos (Horário limite de desligamento: ${SHUTDOWN_TARGET} ${SHUTDOWN_TZ})..."
         gh codespace ssh -c "$CODESPACE_NAME" -- "cd /workspaces/minecraft_server && ./manager.sh start" >> "$LOG_FILE" 2>&1
 
         while [ "$ELAPSED" -lt "$TOTAL_SECONDS" ]; do
+            # Verificar se já atingiu o horário fixo de encerramento (ex: 13:45 BRT)
+            CURRENT_HM=$(TZ="$SHUTDOWN_TZ" date +%H:%M 2>/dev/null || date +%H:%M)
+            if [ "${AUTO_SHUTDOWN_ENABLED:-true}" = "true" ] && [ "$CURRENT_HM" = "$SHUTDOWN_TARGET" ]; then
+                log ">>> [SESSION] Horário limite atingido (${CURRENT_HM}). Encerrando sessão..."
+                break
+            fi
+
             sleep "$INTERVAL_SECONDS"
             ELAPSED=$((ELAPSED + INTERVAL_SECONDS))
             REMAINING=$(( (TOTAL_SECONDS - ELAPSED) / 60 ))
-            log ">>> [SESSION] Keepalive ativo (${REMAINING}m restantes)..."
+            log ">>> [SESSION] Keepalive ativo (${REMAINING}m restantes | Hora atual: $(TZ="$SHUTDOWN_TZ" date +%H:%M 2>/dev/null || date +%H:%M))..."
             gh codespace ssh -c "$CODESPACE_NAME" -- "cd /workspaces/minecraft_server && ./manager.sh save && ./manager.sh status" >> "$LOG_FILE" 2>&1 || true
         done
 
-        log ">>> [SESSION] Tempo de sessão esgotado (${DURATION_MINUTES}m). Encerrando..."
+        log ">>> [SESSION] Encerrando sessão supervisionada. Executando stop-backup no Codespace..."
         gh codespace ssh -c "$CODESPACE_NAME" -- "cd /workspaces/minecraft_server && ./manager.sh stop-backup" >> "$LOG_FILE" 2>&1 || true
         gh codespace stop -c "$CODESPACE_NAME" >> "$LOG_FILE" 2>&1
         log ">>> [SESSION] Sessão finalizada com sucesso."
