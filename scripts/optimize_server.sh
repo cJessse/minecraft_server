@@ -80,7 +80,7 @@ if [ ${#PROPERTIES_FILES[@]} -gt 0 ]; then
         set_property "$prop" "rcon.password" "${RCON_PASSWORD:-SGItosSaveSecretPass2026!}"
         set_property "$prop" "broadcast-rcon-to-ops" "true"
         set_property "$prop" "network-compression-threshold" "512"
-        set_property "$prop" "entity-broadcast-range-percentage" "80"
+        set_property "$prop" "entity-broadcast-range-percentage" "100"
         
         if [ "$QUIET_MODE" = false ]; then
             echo -e "  ${GREEN}✓ sync-chunk-writes=true${NC} (gravação síncrona/persistente anti-rollback)"

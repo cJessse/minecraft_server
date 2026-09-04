@@ -20,20 +20,20 @@ world-settings:
       exp: 6.0
     mob-spawn-range: 4
     entity-activation-range:
-      animals: 16
-      monsters: 24
-      raiders: 32
-      misc: 8
-      water: 12
-      villagers: 16
-      flying-monsters: 32
+      animals: 32
+      monsters: 32
+      raiders: 48
+      misc: 16
+      water: 16
+      villagers: 32
+      flying-monsters: 48
       tick-inactive-villagers: false
     entity-tracking-range:
-      players: 48
-      animals: 32
-      monsters: 40
-      misc: 24
-      other: 48
+      players: 64
+      animals: 64
+      monsters: 64
+      misc: 32
+      other: 64
     ticks-per:
       hopper-transfer: 8
       hopper-check: 8
